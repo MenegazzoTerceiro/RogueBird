@@ -39,6 +39,12 @@ public class PlayState implements GameState {
     private int score, coinScore, tickCount, deadTimer;
     private boolean dead;
 
+    //── Míssil ────────────────────────────────────────────────────────
+    private Missile missile;
+    private int lastMissileScore = 0;
+
+
+
     public PlayState(Game game) {
         this.game = game;
     }
@@ -124,11 +130,35 @@ public class PlayState implements GameState {
                 coins.remove(i);
         }
 
+        //chama míssil ────────────────────────────────────────────────────────
+        if(score != 0 && score%10 == 0 && score != lastMissileScore){
+            
+            missile = new Missile(birdY, game.width, score);
+            lastMissileScore = score;
+
+        }
+
+       //atualiza míssil ────────────────────────────────────────────────────────
+        if(missile != null){
+            missile.update();
+        }
+
         groundScroll = (groundScroll + PIPE_SPD) % 30;
 
         // Colisões (use hitbox retângulos — same bounds as the squares below)
         int bx = BIRD_X - BIRD_W / 2, by = (int) birdY - BIRD_H / 2;
         Rectangle birdRect = new Rectangle(bx + 3, by + 3, BIRD_W - 6, BIRD_H - 6); // slight inset
+
+        //colisão do míssil ────────────────────────────────────────────────────────
+        if(missile != null){
+            Rectangle missileColide = missile.getBounds();
+
+            if(birdRect.intersects(missileColide)){
+                die();
+                return;
+            }
+        }
+
 
         // colisão com moedas
         for (int i = coins.size() - 1; i >= 0; i--) {
@@ -198,6 +228,12 @@ public class PlayState implements GameState {
         g.setColor(new Color(210, 170, 80));
         g.fillRect(0, groundTop, game.width, GROUND_H);
         // TODO: sprite
+
+        // ── míssil ───────────────────────────────────────────────────────
+        if(missile != null){
+            missile.render(g);
+        }
+
         // ── Bird (interpolated) ───────────────────────────────────────────
         float ry = prevBirdY + (birdY - prevBirdY) * alpha;
         int bx = BIRD_X - BIRD_W / 2;
