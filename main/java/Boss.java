@@ -10,7 +10,8 @@ public class Boss {
         FIREBALL_ATTACK,
         LASER_AIMING,
         LASER_LOCKED,
-        LASER_FIRING
+        LASER_FIRING,
+        DYING
     }
 
     private int x;
@@ -36,6 +37,7 @@ public class Boss {
     private int fireballDamage;
     private List<Fireball> fireballs;
     private int fireballBurst;
+    private int deathSpeed;
 
     private int targetBirdX;
     private int targetBirdY;
@@ -137,6 +139,7 @@ public class Boss {
         this.laserDamage = calculateLaserDamage(level);
         this.fireballDamage = calculateFireballDamage(level);
         fireballs = new ArrayList<>();
+        this.deathSpeed = 0;
 
         System.out.println("BOSS COMPILADO NOVAMENTE");
     }
@@ -206,7 +209,7 @@ public class Boss {
                         targetBirdY - bossCenterY,
                         targetBirdX - bossCenterX);
 
-                if (stateTimer >= 120) { 
+                if (stateTimer >= 120) {
 
                     attackState = AttackState.LASER_LOCKED;
 
@@ -240,6 +243,11 @@ public class Boss {
                     System.out.println("Fim do laser");
                 }
 
+                break;
+
+            case DYING:
+                deathSpeed += 1;
+                y += deathSpeed;
                 break;
 
             default:
@@ -280,7 +288,7 @@ public class Boss {
                         20));
     }
 
-     public void updat(int birdX, int birdY) {
+    public void updat(int birdX, int birdY) {
         if (!positioned) {
             x -= 2; // Move o boss para a esquerda até atingir a posição alvo
             if (x <= targetX) {
@@ -326,6 +334,7 @@ public class Boss {
 
         return new BasicStroke(50).createStrokedShape(laserLine);
     }
+
 
     public void render(Graphics2D g) {
 
@@ -415,6 +424,17 @@ public class Boss {
         if (currentHealth < 0) {
             currentHealth = 0;
         }
+
+        if (currentHealth <= 0 && attackState != AttackState.DYING) {
+
+            attackState = AttackState.DYING;
+            stateTimer = 0;
+            System.out.println("Boss morreu");
+        }
+    }
+
+    public boolean hasFinishedDeathAnimation() {
+        return attackState == AttackState.DYING && y > 800;
     }
 
     public boolean isDead() {
