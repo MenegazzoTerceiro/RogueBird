@@ -441,6 +441,7 @@ public class Boss {
         return currentHealth <= 0;
     }
 
+    // retorna o retângulo que representa o corpo do boss (para colisão)
     public Rectangle getBounds() {
         return new Rectangle(x, y, width, height);
     }
