@@ -19,7 +19,9 @@ public class Game implements Runnable {
 
     // ── States ─────────────────────────────────────────────────────────────
     private GameState current, pending;
-
+   public int coins     = 0;   // persistent wallet
+    public int ownedSkins = 0;  // bitmask of purchased skin IDs
+    public int equippedSkin = 0; // 0=none, 1=hat, 2=sunglasses, 3=cape, 4=crown
     // ── Loop ───────────────────────────────────────────────────────────────
     private boolean running;
 
