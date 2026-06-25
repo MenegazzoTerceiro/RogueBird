@@ -134,7 +134,7 @@ public class Boss {
 
         attackState = AttackState.IDLE;
         stateTimer = 0;
-        attackCooldown = 180;
+        attackCooldown = 100;
         laserHitApplied = false;
         this.laserDamage = calculateLaserDamage(level);
         this.fireballDamage = calculateFireballDamage(level);
@@ -209,7 +209,7 @@ public class Boss {
                         targetBirdY - bossCenterY,
                         targetBirdX - bossCenterX);
 
-                if (stateTimer >= 120) {
+                if (stateTimer >= 100) {
 
                     attackState = AttackState.LASER_LOCKED;
 
@@ -237,7 +237,7 @@ public class Boss {
 
                     attackState = AttackState.IDLE;
 
-                    attackCooldown = 180;
+                    attackCooldown = 100;
                     stateTimer = 0;
 
                     System.out.println("Fim do laser");

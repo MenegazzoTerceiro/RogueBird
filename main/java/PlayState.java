@@ -109,7 +109,7 @@ public class PlayState implements GameState {
             birdAngle = -25;
         }
         // ativar escudo com shift
-        if (game.keys.isJustPressed(KeyEvent.VK_SHIFT)) {
+        if (game.keys.isJustPressed(KeyEvent.VK_SHIFT)|| game.mouse.isJustPressed(MouseHandler.MIDDLE)) {
             bird.activateShield();
         }
 
@@ -263,6 +263,7 @@ public class PlayState implements GameState {
             }
         }
 
+        // Bird balas atingindo o boss
         if (boss != null) {
             for (int i = birdBullets.size() - 1; i >= 0; i--) {
 
@@ -270,7 +271,7 @@ public class PlayState implements GameState {
 
                 if (bullet.getBounds().intersects(boss.getBounds())) {
                     System.err.println(
-                            "BOSS ACERTOU - DANO: "
+                            "BIRD ACERTOU - DANO: "
                                     + bird.getBulletDamage());
                     boss.takeDamage(bird.getBulletDamage());
                     birdBullets.remove(i);
@@ -330,7 +331,7 @@ public class PlayState implements GameState {
     }
 
     private void defineNextBossScore() {
-        nextBossScore = score + 17 + rng.nextInt(7); // próximo boss spawnará entre 17 e 23 pontos após o último (abaixe
+        nextBossScore = score + 16 + rng.nextInt(7); // próximo boss spawnará entre 17 e 23 pontos após o último (abaixe
                                                      // o 17 para testes)
     }
 
