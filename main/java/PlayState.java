@@ -12,7 +12,6 @@ public class PlayState implements GameState {
     private final Game game;
 
     // ── Sizes (public so MenuState can reference them) ────────────────────
-    public static final int GROUND_H = 60;
     public static final int BIRD_W   = 34;
     public static final int BIRD_H   = 24;
     public static final int BIRD_X   = 80;
@@ -40,19 +39,22 @@ public class PlayState implements GameState {
     private final List<int[]> coins = new ArrayList<>(); // [x, y]
     private static final int COIN_SIZE   = 30;
     private static final int COIN_MARGIN = 30;
-    private int coinsThisRun; // coins collected in this run only
+    private int coinsThisRun;
 
     // ── Ground scroll ─────────────────────────────────────────────────────
-    // ── Boss ─────────────────────────────────────────────────────────────
+    public static final int GROUND_H = 60;
+    private float groundScroll;
+
+    // ── Boss ──────────────────────────────────────────────────────────────
     private Boss boss;
     private boolean bossFight;
     private boolean bossSpawned;
-    private static final int BOSS_SCORE_TRIGGER = 5;
     private int nextBossScore;
     private int bossLevel;
-    // ── chão ────────────────────────────────────────────────────────────
-    public static final int GROUND_H = 60;
-    private float groundScroll;
+
+    // ── Missile ───────────────────────────────────────────────────────────
+    private Missile missile;
+    private int lastMissileScore = 0;
 
     // ── Game state ────────────────────────────────────────────────────────
     private int score, tickCount, deadTimer;
@@ -73,14 +75,6 @@ public class PlayState implements GameState {
         } catch (Exception e) {
             throw new RuntimeException("Failed to load: " + path, e);
         }
-    //── Míssil ────────────────────────────────────────────────────────
-    private Missile missile;
-    private int lastMissileScore = 0;
-
-
-
-    public PlayState(Game game) {
-        this.game = game;
     }
 
     @Override
@@ -101,7 +95,7 @@ public class PlayState implements GameState {
         boss = null;
         bossFight = false;
         bossSpawned = false;
-        nextBossScore = 19; // spawn do primeiro boss após 19 pontos (diminuir para testes)
+        nextBossScore = 19;
         bossLevel = 1;
     }
 
@@ -123,39 +117,26 @@ public class PlayState implements GameState {
         }
 
         tickCount++;
-        if (flapPressed()) { birdVel = FLAP; birdAngle = -25; }
-
-        prevBirdY  = birdY;
-        birdVel   += GRAVITY;
-        birdY     += birdVel;
-        birdAngle  = Math.min(birdAngle + 3, 70);
-
-        // ── Spawn pipes + coins ───────────────────────────────────────────
-        if (tickCount % PIPE_FREQ == 0) {
-            int gapY = 120 + rng.nextInt(game.height - GROUND_H - 120 - GAP);
-            pipes.add(new int[]{ game.width + 10, gapY });
-        if (!bossFight && score >= nextBossScore) {
-            bossFight = true;
-        }
 
         if (flapPressed()) {
             birdVel = FLAP;
             birdAngle = -25;
         }
 
-        prevBirdY = birdY;
-        birdVel += GRAVITY;
-        birdY += birdVel;
-        birdAngle = Math.min(birdAngle + 3, 60);
+        prevBirdY  = birdY;
+        birdVel   += GRAVITY;
+        birdY     += birdVel;
+        birdAngle  = Math.min(birdAngle + 3, 60);
 
+        // ── Check boss trigger ────────────────────────────────────────────
+        if (!bossFight && score >= nextBossScore) {
+            bossFight = true;
+        }
+
+        // ── Spawn pipes + coins ───────────────────────────────────────────
         if (!bossFight && tickCount % PIPE_FREQ == 0) {
-            int gapY = 120 + rng.nextInt(
-                    game.height - GROUND_H - 120 - GAP);
-
-            pipes.add(new int[] {
-                    game.width + 10,
-                    gapY
-            });
+            int gapY = 120 + rng.nextInt(game.height - GROUND_H - 120 - GAP);
+            pipes.add(new int[]{ game.width + 10, gapY });
 
             pipesUntilNextCoin--;
             if (pipesUntilNextCoin <= 0) {
@@ -166,7 +147,7 @@ public class PlayState implements GameState {
             }
         }
 
-        // ── Scroll pipes ─────────────────────────────────────────────────
+        // ── Scroll pipes ──────────────────────────────────────────────────
         for (int i = pipes.size() - 1; i >= 0; i--) {
             pipes.get(i)[0] -= (int) PIPE_SPD;
             if (pipes.get(i)[0] + PIPE_W / 2 == BIRD_X) score++;
@@ -180,96 +161,73 @@ public class PlayState implements GameState {
         }
 
         groundScroll = (groundScroll + PIPE_SPD) % game.width;
-        // spawn do boss
+
+        // ── Spawn boss ────────────────────────────────────────────────────
         if (bossFight && !bossSpawned && pipes.isEmpty()) {
-
             int bossSize = BIRD_W * 2;
-
             boss = new Boss(
-                    game.width + 50, // nasce fora da tela
+                    game.width + 50,
                     200,
                     bossSize - 10,
                     bossSize,
                     game.width - 100,
                     game.height / 2,
                     bossLevel);
-
             bossSpawned = true;
-            System.out.println(
-                    "Boss nasceu com "
-                            + boss.getCurrentHealth()
-                            + "/"
-                            + boss.getMaxHealth());
-
+            System.out.println("Boss nasceu com "
+                    + boss.getCurrentHealth() + "/" + boss.getMaxHealth());
         }
 
-        // entrada do boss
+        // ── Update boss ───────────────────────────────────────────────────
         if (boss != null) {
             boss.updat(BIRD_X, (int) birdY);
-            if (bossSpawned && boss != null && boss.hasFinishedDeathAnimation()) {
+            if (bossSpawned && boss.hasFinishedDeathAnimation()) {
                 bossLevel++;
                 boss = null;
                 bossFight = false;
                 bossSpawned = false;
-
                 defineNextBossScore();
             }
-        //chama míssil ────────────────────────────────────────────────────────
-        if(score != 0 && score%10 == 0 && score != lastMissileScore){
-            
-            missile = new Missile(birdY, game.width, score);
-            lastMissileScore = score;
-
         }
 
-       //atualiza míssil ────────────────────────────────────────────────────────
-        if(missile != null){
+        // ── Spawn missile ─────────────────────────────────────────────────
+        if (score != 0 && score % 10 == 0 && score != lastMissileScore) {
+            missile = new Missile(birdY, game.width, score);
+            lastMissileScore = score;
+        }
+
+        // ── Update missile ────────────────────────────────────────────────
+        if (missile != null) {
             missile.update();
         }
 
-        groundScroll = (groundScroll + PIPE_SPD) % 30;
-
+        // ── Collision rects ───────────────────────────────────────────────
         int bx = BIRD_X - BIRD_W / 2, by = (int) birdY - BIRD_H / 2;
         Rectangle birdRect = new Rectangle(bx + 3, by + 3, BIRD_W - 6, BIRD_H - 6);
 
-        // ── Coin collection ───────────────────────────────────────────────
-        // colisão com o laser do boss
+        // ── Boss laser collision ──────────────────────────────────────────
         if (boss != null) {
             Shape laserHitbox = boss.getLaserHitbox();
-
             if (laserHitbox != null && !boss.hasLaserHit() && laserHitbox.intersects(
-                    birdRect.getX(),
-                    birdRect.getY(),
-                    birdRect.getWidth(),
-                    birdRect.getHeight())) {
-
+                    birdRect.getX(), birdRect.getY(),
+                    birdRect.getWidth(), birdRect.getHeight())) {
                 boss.markLaserHit();
-                System.out.println(
-                        "LASER ACERTOU - DANO: "
-                                + boss.getLaserDamage()); // substituir por função de dano
+                System.out.println("LASER ACERTOU - DANO: " + boss.getLaserDamage());
             }
         }
 
-        // colisão com fireballs do boss
+        // ── Boss fireball collision ───────────────────────────────────────
         if (boss != null) {
-
             for (int i = boss.getFireball().size() - 1; i >= 0; i--) {
-
                 Fireball fireball = boss.getFireball().get(i);
-
-                if (birdRect.intersects(
-                        fireball.getBounds())) {
-
-                    System.out.println(
-                            "FIREBALL ACERTOU - DANO: "
-                                    + boss.getFireballDamage());
-
+                if (birdRect.intersects(fireball.getBounds())) {
+                    System.out.println("FIREBALL ACERTOU - DANO: " + boss.getFireballDamage());
                     boss.getFireball().remove(i);
                 }
             }
         }
 
-        // colisão com moedas
+        // ── Coin collection ───────────────────────────────────────────────
         for (int i = coins.size() - 1; i >= 0; i--) {
             int[] coin = coins.get(i);
             Rectangle coinRect = new Rectangle(
@@ -277,29 +235,37 @@ public class PlayState implements GameState {
                     COIN_SIZE, COIN_SIZE);
             if (birdRect.intersects(coinRect)) {
                 coinsThisRun++;
-                game.coins++;          // persist to wallet immediately
+                game.coins++;
                 coins.remove(i);
             }
         }
 
+        // ── Boundary checks ───────────────────────────────────────────────
         if (birdY - BIRD_H / 2f < 0) { birdY = BIRD_H / 2f; birdVel = 0; }
         if (birdY + BIRD_H / 2f >= game.height - GROUND_H) { die(); return; }
 
-        if (bossSpawned && boss != null && tickCount % 60 == 0) { // dano do boss a cada segundo TEMPORARIO
+        // ── Temp boss damage (1/sec) ──────────────────────────────────────
+        if (bossSpawned && boss != null && tickCount % 60 == 0) {
             boss.takeDamage(1);
         }
 
+        // ── Pipe collision ────────────────────────────────────────────────
         for (int[] p : pipes) {
             int px = p[0], gapY = p[1];
             if (birdRect.intersects(new Rectangle(px, 0, PIPE_W, gapY)) ||
-                birdRect.intersects(new Rectangle(px, gapY + GAP, PIPE_W, game.height)))
-                { die(); return; }
+                birdRect.intersects(new Rectangle(px, gapY + GAP, PIPE_W, game.height))) {
+                die(); return;
+            }
         }
     }
 
     private void die() { dead = true; deadTimer = 0; birdVel = -5; }
 
-    // ── Pipe drawing ─────────────────────────────────────────────────────
+    private void defineNextBossScore() {
+        nextBossScore = score + 17 + rng.nextInt(7);
+    }
+
+    // ── Pipe drawing ──────────────────────────────────────────────────────
     private void drawPipe(Graphics2D g, int px, int y1, int y2, int capDir) {
         int bodyH = y2 - y1;
         if (bodyH <= 0) return;
@@ -345,8 +311,6 @@ public class PlayState implements GameState {
     }
 
     // ── Bird skin drawing ─────────────────────────────────────────────────
-    // Call AFTER drawing the bird body, inside the rotated g2 context.
-    // bx/by are the top-left of the bird rectangle.
     private void drawSkin(Graphics2D g2, int bx, int by) {
         switch (game.equippedSkin) {
             case 1 -> drawHat(g2, bx, by);
@@ -356,31 +320,25 @@ public class PlayState implements GameState {
         }
     }
 
-    /** A flat-topped hat sitting on the bird's head. */
     private void drawHat(Graphics2D g2, int bx, int by) {
         int cx = bx + BIRD_W / 2;
-        // brim
         g2.setColor(new Color(30, 20, 10));
         g2.fillRect(cx - 10, by - 4, 20, 4);
-        // crown
         g2.fillRect(cx - 6, by - 14, 12, 11);
-        // hat band
         g2.setColor(new Color(180, 30, 30));
         g2.fillRect(cx - 6, by - 6, 12, 3);
     }
 
-    /** Two oval lenses on the front face of the bird. */
     private void drawSunglasses(Graphics2D g2, int bx, int by) {
-        int faceX = bx + BIRD_W - 10; // right side = front of the bird
+        int faceX = bx + BIRD_W - 10;
         int midY  = by + BIRD_H / 2 - 2;
         g2.setColor(new Color(20, 20, 20, 200));
-        g2.fillOval(faceX - 10, midY - 4, 9, 7);  // left lens
-        g2.fillOval(faceX,      midY - 4, 9, 7);  // right lens
+        g2.fillOval(faceX - 10, midY - 4, 9, 7);
+        g2.fillOval(faceX,      midY - 4, 9, 7);
         g2.setColor(new Color(60, 60, 60));
-        g2.drawLine(faceX - 1, midY, faceX, midY); // bridge
+        g2.drawLine(faceX - 1, midY, faceX, midY);
     }
 
-    /** A small triangular cape trailing behind the bird. */
     private void drawCape(Graphics2D g2, int bx, int by) {
         int tipX = bx - 6;
         int topY = by + 4;
@@ -393,28 +351,16 @@ public class PlayState implements GameState {
         g2.drawPolygon(xs, ys, 3);
     }
 
-    /** A three-point crown on top of the bird. */
     private void drawCrown(Graphics2D g2, int bx, int by) {
         int cx = bx + BIRD_W / 2;
-        // three points: left, center, right
         int[] xs = { cx - 9, cx - 9, cx - 3, cx, cx + 3, cx + 9, cx + 9 };
         int[] ys = { by - 2, by - 10, by - 6, by - 12, by - 6, by - 10, by - 2 };
         g2.setColor(new Color(255, 200, 0));
         g2.fillPolygon(xs, ys, 7);
         g2.setColor(new Color(200, 140, 0));
         g2.drawPolygon(xs, ys, 7);
-        // jewels
         g2.setColor(new Color(255, 60, 60));
         g2.fillOval(cx - 2, by - 12, 4, 4);
-    private void defineNextBossScore() {
-        nextBossScore = score + 17 + rng.nextInt(7); // próximo boss spawnará entre 17 e 23 pontos após o último (abaixe
-                                                    // o 17 para testes)
-    }
-
-    private void die() {
-        dead = true;
-        deadTimer = 0;
-        birdVel = -5;
     }
 
     @Override
@@ -434,22 +380,16 @@ public class PlayState implements GameState {
 
         // ── Floor ─────────────────────────────────────────────────────────
         int offset = (int) groundScroll;
-        g.drawImage(imgFloor, -offset,             groundTop, game.width, game.height, null);
-        g.drawImage(imgFloor, game.width - offset,  groundTop, game.width, game.height, null);
+        g.drawImage(imgFloor, -offset,            groundTop, game.width, game.height, null);
+        g.drawImage(imgFloor, game.width - offset, groundTop, game.width, game.height, null);
 
-        // ── Bird + skin ───────────────────────────────────────────────────
-        // ── Boss ─────────────────────────────────────────────────────────────
+        // ── Boss ──────────────────────────────────────────────────────────
         if (bossSpawned && boss != null) {
             boss.render(g);
         }
 
-        // ── chão ────────────────────────────────────────────────────────
-        g.setColor(new Color(210, 170, 80));
-        g.fillRect(0, groundTop, game.width, GROUND_H);
-        // TODO: sprite
-
-        // ── míssil ───────────────────────────────────────────────────────
-        if(missile != null){
+        // ── Missile ───────────────────────────────────────────────────────
+        if (missile != null) {
             missile.render(g);
         }
 
@@ -462,7 +402,6 @@ public class PlayState implements GameState {
         g2.rotate(Math.toRadians(birdAngle), BIRD_X, ry);
         g2.setColor(new Color(255, 200, 0));
         g2.fillRect(bx, by, BIRD_W, BIRD_H);
-        // replace with: g2.drawImage(imgBird, bx, by, BIRD_W, BIRD_H, null);
         drawSkin(g2, bx, by);
         g2.dispose();
 
@@ -478,36 +417,26 @@ public class PlayState implements GameState {
         }
 
         // ── Score ─────────────────────────────────────────────────────────
-
         g.setFont(new Font("Arial", Font.BOLD, 36));
         FontMetrics fm = g.getFontMetrics();
         String sc = String.valueOf(score);
         g.setColor(new Color(0, 0, 0, 80));
 
-        if (!bossSpawned) { // não mostrar score durante a luta com o boss
+        if (!bossSpawned) {
             g.drawString(sc, game.width / 2 - fm.stringWidth(sc) / 2 + 2, 62);
             g.setColor(Color.WHITE);
             g.drawString(sc, game.width / 2 - fm.stringWidth(sc) / 2, 60);
         }
 
-        // ── Boss Health Bar ───────────────────────────────────────────────
+        // ── Boss health bar ───────────────────────────────────────────────
         if (bossSpawned && boss != null) {
-
-            int barWidth = 260;
-            int barHeight = 20;
-
-            int x = game.width / 2 - barWidth / 2;
-            int y = 35;
-
+            int barWidth = 260, barHeight = 20;
+            int x = game.width / 2 - barWidth / 2, y = 35;
             g.setColor(Color.GRAY);
             g.fillRect(x, y, barWidth, barHeight);
-
-            int currentWidth = boss.getCurrentHealth() * barWidth
-                    / boss.getMaxHealth();
-
+            int currentWidth = boss.getCurrentHealth() * barWidth / boss.getMaxHealth();
             g.setColor(Color.RED);
             g.fillRect(x, y, currentWidth, barHeight);
-
             g.setColor(Color.WHITE);
             g.drawRect(x, y, barWidth, barHeight);
         }
@@ -515,7 +444,7 @@ public class PlayState implements GameState {
         // ── Coin HUD ──────────────────────────────────────────────────────
         g.setFont(new Font("Arial", Font.BOLD, 18));
         g.setColor(new Color(255, 220, 0));
-        g.drawString("$ " + game.coins, 10, 25); // total wallet
+        g.drawString("$ " + game.coins, 10, 25);
         if (coinsThisRun > 0) {
             g.setFont(new Font("Arial", Font.PLAIN, 14));
             g.setColor(new Color(255, 240, 150));
