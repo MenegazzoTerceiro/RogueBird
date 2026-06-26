@@ -71,10 +71,6 @@ public class PlayState implements GameState {
     private BufferedImage imgBackground;
     private BufferedImage imgFloor;
 
-    public PlayState(Game game) {
-        this.game = game;
-    }
-
     private BufferedImage load(String filename) {
         String path = "/recursos/sprites/" + filename;
         try (InputStream is = getClass().getResourceAsStream(path)) {
@@ -145,7 +141,6 @@ public class PlayState implements GameState {
         long now = System.currentTimeMillis();
 
         // atirar com o botão direito do mouse
-        if ((game.mouse.isJustPressed(MouseHandler.RIGHT) || game.keys.isJustPressed(KeyEvent.VK_ENTER))
         if ((game.mouse.isJustPressed(MouseHandler.RIGHT)
                 || game.keys.isJustPressed(KeyEvent.VK_ENTER))
                 && now - lastShotTime >= SHOT_COOLDOWN) {
