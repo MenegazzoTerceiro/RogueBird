@@ -15,22 +15,22 @@ public class Bird {
     private int bulletDamage;
     private float bulletSpeed;
 
-    public Bird() {
+public Bird(Game game) {
 
-        maxHealth = 8;
-        currentHealth = maxHealth;
+    maxHealth = 8 + game.healthUpgrade;
+    currentHealth = maxHealth;
 
-        maxShieldUses = 3;
-        shieldUses = maxShieldUses;
+    maxShieldUses = 3;
+    shieldUses = maxShieldUses;
 
-        maxShieldHealth = 3;
-        shieldHealth = maxShieldHealth;
+    maxShieldHealth = 3 + game.shieldUpgrade;
+    shieldHealth = maxShieldHealth;
 
-        shieldActive = false;
+    shieldActive = false;
 
-        bulletDamage = 1;
-        bulletSpeed = 12f;
-    }
+    bulletDamage = 1 + game.damageUpgrade;
+    bulletSpeed = 12f;
+}
 
     public void takeDamage(int damage) {
 
@@ -112,4 +112,6 @@ public class Bird {
     public int getMaxShieldhealth() {
         return maxShieldHealth;
     }
+
+    
 }

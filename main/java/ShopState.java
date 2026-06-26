@@ -16,20 +16,31 @@ public class ShopState implements GameState {
 
     // ── Shop items: { skinId, price } ────────────────────────────────────
     private static final int[][] ITEMS = {
-        { 1, 10  },  // Hat
-        { 2, 15  },  // Sunglasses
-        { 3, 20  },  // Cape
-        { 4, 30  },  // Crown
+            { 1, 10 }, // Hat
+            { 2, 15 }, // Sunglasses
+            { 3, 20 }, // Cape
+            { 4, 30 }, // Crown
     };
     private static final String[] ITEM_NAMES = { "Chapeu", "Oculos", "Capa", "Coroa" };
 
-    private static final int COLS = 2;
+    private static final String[] UPGRADE_NAMES = {
+            "Vida Escudo",
+            "Vida Flappy",
+            "Dano Tiro"
+    };
+
+    private static final int UPGRADE_PRICE = 10;
+
+    private static final int TOTAL_ITEMS = ITEMS.length + UPGRADE_NAMES.length;
+    private static final int COLS = 3;
 
     private int selected = 0;
     private String feedback = "";
     private int feedbackTimer = 0;
 
-    public ShopState(Game game) { this.game = game; }
+    public ShopState(Game game) {
+        this.game = game;
+    }
 
     // ── Sprite loader ─────────────────────────────────────────────────────
     private BufferedImage load(String filename) {
@@ -48,27 +59,30 @@ public class ShopState implements GameState {
         tick = 0;
         feedback = "";
         imgBackground = load("background.png");
-        imgFloor      = load("chao.png");
+        imgFloor = load("chao.png");
     }
 
-    @Override public void onExit() {}
+    @Override
+    public void onExit() {
+    }
 
     @Override
     public void update() {
-        if (++tick % 35 == 0) blink = !blink;
+        if (++tick % 35 == 0)
+            blink = !blink;
 
         if (game.keys.isJustPressed(KeyEvent.VK_ESCAPE))
             game.setState(new MenuState(game));
 
         if (game.keys.isJustPressed(KeyEvent.VK_LEFT))
-            selected = (selected + ITEMS.length - 1) % ITEMS.length;
+            selected = (selected + TOTAL_ITEMS - 1) % TOTAL_ITEMS;
         if (game.keys.isJustPressed(KeyEvent.VK_RIGHT))
-            selected = (selected + 1) % ITEMS.length;
+            selected = (selected + 1) % TOTAL_ITEMS;
 
         if (game.keys.isJustPressed(KeyEvent.VK_UP))
-            selected = (selected - COLS + ITEMS.length) % ITEMS.length;
+            selected = (selected - COLS + TOTAL_ITEMS) % TOTAL_ITEMS;
         if (game.keys.isJustPressed(KeyEvent.VK_DOWN))
-            selected = (selected + COLS) % ITEMS.length;
+            selected = (selected + COLS) % TOTAL_ITEMS;
 
         for (int i = 0; i < itemRects.length; i++) {
             if (game.mouse.isJustPressed(MouseHandler.LEFT)
@@ -80,15 +94,20 @@ public class ShopState implements GameState {
 
         if (game.keys.isJustPressed(KeyEvent.VK_ENTER)
                 || game.keys.isJustPressed(KeyEvent.VK_SPACE)) {
-            buyOrEquip(selected);
+            if (selected < ITEMS.length) {
+                buyOrEquip(selected);
+            } else {
+                buyUpgrade(selected - ITEMS.length);
+            }
         }
 
-        if (feedbackTimer > 0) feedbackTimer--;
+        if (feedbackTimer > 0)
+            feedbackTimer--;
     }
 
     private void buyOrEquip(int idx) {
         int skinId = ITEMS[idx][0];
-        int price  = ITEMS[idx][1];
+        int price = ITEMS[idx][1];
 
         if (game.equippedSkin == skinId) {
             feedback = "Ja equipado!";
@@ -106,14 +125,50 @@ public class ShopState implements GameState {
         feedbackTimer = 120;
     }
 
-    private boolean isOwned(int skinId) { return (game.ownedSkins & (1 << skinId)) != 0; }
-    private void setOwned(int skinId)   { game.ownedSkins |= (1 << skinId); }
+    private boolean isOwned(int skinId) {
+        return (game.ownedSkins & (1 << skinId)) != 0;
+    }
 
-    private final Rectangle[] itemRects = new Rectangle[ITEMS.length];
+    private void setOwned(int skinId) {
+        game.ownedSkins |= (1 << skinId);
+    }
+
+    private final Rectangle[] itemRects = new Rectangle[TOTAL_ITEMS];
+
+    private void buyUpgrade(int idx) {
+
+        if (game.coins < UPGRADE_PRICE) {
+            feedback = "Moedas insuficientes!";
+            feedbackTimer = 120;
+            return;
+        }
+
+        game.coins -= UPGRADE_PRICE;
+
+        switch (idx) {
+
+            case 0:
+                game.shieldUpgrade++;
+                feedback = "Escudo +1";
+                break;
+
+            case 1:
+                game.healthUpgrade++;
+                feedback = "Vida +1";
+                break;
+
+            case 2:
+                game.damageUpgrade++;
+                feedback = "Dano +1";
+                break;
+        }
+
+        feedbackTimer = 120;
+    }
 
     @Override
     public void render(Graphics2D g, float alpha) {
-        int cx        = game.width / 2;
+        int cx = game.width / 2;
         int groundTop = game.height - PlayState.GROUND_H;
 
         // ── Background sprite ─────────────────────────────────────────────
@@ -138,62 +193,173 @@ public class ShopState implements GameState {
         g.drawString(wallet, cx - g.getFontMetrics().stringWidth(wallet) / 2, 100);
 
         // ── 2×2 Grid Items ────────────────────────────────────────────────
-        int itemW  = 110, itemH  = 130;
-        int colGap = 24,  rowGap = 24;
-        int rows   = (int) Math.ceil((double) ITEMS.length / COLS);
+       // ── Grid de itens e upgrades ───────────────────────────────────────
+int itemW = 110, itemH = 130;
+int colGap = 24, rowGap = 24;
+int rows = (int) Math.ceil((double) TOTAL_ITEMS / COLS);
 
-        int totalW = COLS * itemW + (COLS - 1) * colGap;
-        int totalH = rows  * itemH + (rows  - 1) * rowGap;
+int totalW = COLS * itemW + (COLS - 1) * colGap;
+int totalH = rows * itemH + (rows - 1) * rowGap;
 
-        int startX = cx - totalW / 2;
-        int startY = 120;
+int startX = cx - totalW / 2;
+int startY = 120;
 
-        for (int i = 0; i < ITEMS.length; i++) {
-            int col = i % COLS;
-            int row = i / COLS;
+for (int i = 0; i < TOTAL_ITEMS; i++) {
 
-            int skinId = ITEMS[i][0];
-            int price  = ITEMS[i][1];
-            int x = startX + col * (itemW + colGap);
-            int y = startY + row * (itemH + rowGap);
+    int col = i % COLS;
+    int row = i / COLS;
 
-            itemRects[i] = new Rectangle(x, y, itemW, itemH);
+    int x = startX + col * (itemW + colGap);
+    int y = startY + row * (itemH + rowGap);
 
-            boolean isSel    = (i == selected);
-            boolean owned    = isOwned(skinId);
-            boolean equipped = game.equippedSkin == skinId;
+    itemRects[i] = new Rectangle(x, y, itemW, itemH);
 
-            g.setColor(isSel ? new Color(255, 240, 180) : new Color(255, 255, 255, 60));
-            g.fillRoundRect(x, y, itemW, itemH, 12, 12);
-            g.setColor(isSel ? new Color(200, 140, 0) : new Color(255, 255, 255, 120));
-            g.drawRoundRect(x, y, itemW, itemH, 12, 12);
+    boolean isSel = (i == selected);
 
-            int bpx = x + itemW / 2 - PlayState.BIRD_W / 2;
-            int bpy = y + 20;
-            g.setColor(new Color(255, 200, 0));
-            g.fillRect(bpx, bpy, PlayState.BIRD_W, PlayState.BIRD_H);
-            drawSkinPreview(g, skinId, bpx, bpy);
+    g.setColor(isSel
+            ? new Color(255, 240, 180)
+            : new Color(255, 255, 255, 60));
+    g.fillRoundRect(x, y, itemW, itemH, 12, 12);
 
-            g.setFont(new Font("Arial", Font.BOLD, 14));
-            fm = g.getFontMetrics();
-            g.setColor(isSel ? new Color(80, 40, 0) : Color.WHITE);
-            String name = ITEM_NAMES[i];
-            g.drawString(name, x + itemW / 2 - fm.stringWidth(name) / 2, y + 75);
+    g.setColor(isSel
+            ? new Color(200, 140, 0)
+            : new Color(255, 255, 255, 120));
+    g.drawRoundRect(x, y, itemW, itemH, 12, 12);
 
-            g.setFont(new Font("Arial", Font.PLAIN, 13));
-            fm = g.getFontMetrics();
-            String status = equipped ? "EQUIPADO" : owned ? "Equipar" : "$ " + price;
-            g.setColor(equipped ? new Color(100, 220, 80)
-                     : owned    ? new Color(150, 220, 255)
-                     : (game.coins >= price ? new Color(255, 220, 0) : new Color(200, 80, 80)));
-            g.drawString(status, x + itemW / 2 - fm.stringWidth(status) / 2, y + 95);
+    // ============================
+    // SKINS
+    // ============================
 
-            if (isSel) {
-                g.setColor(new Color(255, 220, 0));
-                g.setFont(new Font("Arial", Font.PLAIN, 20));
-                g.drawString("V", x + itemW / 2 - 8, y - 6);
-            }
+    if (i < ITEMS.length) {
+
+        int skinId = ITEMS[i][0];
+        int price = ITEMS[i][1];
+
+        boolean owned = isOwned(skinId);
+        boolean equipped = game.equippedSkin == skinId;
+
+        int bpx = x + itemW / 2 - PlayState.BIRD_W / 2;
+        int bpy = y + 20;
+
+        g.setColor(new Color(255, 200, 0));
+        g.fillRect(bpx, bpy, PlayState.BIRD_W, PlayState.BIRD_H);
+
+        drawSkinPreview(g, skinId, bpx, bpy);
+
+        g.setFont(new Font("Arial", Font.BOLD, 14));
+        fm = g.getFontMetrics();
+
+        g.setColor(isSel
+                ? new Color(80, 40, 0)
+                : Color.WHITE);
+
+        g.drawString(
+                ITEM_NAMES[i],
+                x + itemW / 2 - fm.stringWidth(ITEM_NAMES[i]) / 2,
+                y + 75);
+
+        String status;
+
+        if (equipped)
+            status = "EQUIPADO";
+        else if (owned)
+            status = "Equipar";
+        else
+            status = "$ " + price;
+
+        g.setFont(new Font("Arial", Font.PLAIN, 13));
+        fm = g.getFontMetrics();
+
+        g.setColor(
+                equipped
+                        ? new Color(100, 220, 80)
+                        : owned
+                                ? new Color(150, 220, 255)
+                                : (game.coins >= price
+                                        ? new Color(255, 220, 0)
+                                        : new Color(200, 80, 80)));
+
+        g.drawString(
+                status,
+                x + itemW / 2 - fm.stringWidth(status) / 2,
+                y + 95);
+    }
+
+    // ============================
+    // UPGRADES
+    // ============================
+
+    else {
+
+        int upgrade = i - ITEMS.length;
+
+        g.setFont(new Font("Arial", Font.BOLD, 14));
+        fm = g.getFontMetrics();
+
+        g.setColor(isSel
+                ? new Color(80, 40, 0)
+                : Color.WHITE);
+
+        g.drawString(
+                UPGRADE_NAMES[upgrade],
+                x + itemW / 2 - fm.stringWidth(UPGRADE_NAMES[upgrade]) / 2,
+                y + 45);
+
+        int nivel;
+
+        switch (upgrade) {
+
+            case 0:
+                nivel = game.shieldUpgrade;
+                break;
+
+            case 1:
+                nivel = game.healthUpgrade;
+                break;
+
+            default:
+                nivel = game.damageUpgrade;
+                break;
         }
+
+        String levelText = "Nivel " + nivel;
+
+        g.setFont(new Font("Arial", Font.PLAIN, 13));
+        fm = g.getFontMetrics();
+
+        g.setColor(new Color(150, 220, 255));
+
+        g.drawString(
+                levelText,
+                x + itemW / 2 - fm.stringWidth(levelText) / 2,
+                y + 70);
+
+        String priceText = "$ " + UPGRADE_PRICE;
+
+        fm = g.getFontMetrics();
+
+        g.setColor(
+                game.coins >= UPGRADE_PRICE
+                        ? new Color(255, 220, 0)
+                        : new Color(200, 80, 80));
+
+        g.drawString(
+                priceText,
+                x + itemW / 2 - fm.stringWidth(priceText) / 2,
+                y + 95);
+    }
+
+    if (isSel) {
+
+        g.setColor(new Color(255, 220, 0));
+        g.setFont(new Font("Arial", Font.PLAIN, 20));
+
+        g.drawString(
+                "V",
+                x + itemW / 2 - 8,
+                y - 6);
+    }
+}
 
         // ── Controls hint ─────────────────────────────────────────────────
         int gridBottom = startY + totalH;
@@ -206,7 +372,7 @@ public class ShopState implements GameState {
         // ── Feedback ──────────────────────────────────────────────────────
         if (feedbackTimer > 0) {
             float alpha2 = Math.min(1f, feedbackTimer / 30f);
-            g.setColor(new Color(255, 255, 100, (int)(alpha2 * 220)));
+            g.setColor(new Color(255, 255, 100, (int) (alpha2 * 220)));
             g.setFont(new Font("Arial", Font.BOLD, 18));
             fm = g.getFontMetrics();
             g.drawString(feedback, cx - fm.stringWidth(feedback) / 2, gridBottom + 54);
@@ -222,24 +388,26 @@ public class ShopState implements GameState {
 
     private void drawSkinPreview(Graphics2D g, int skinId, int bx, int by) {
         switch (skinId) {
-            case 1 -> {
+            case 1: {
                 int cx = bx + PlayState.BIRD_W / 2;
                 g.setColor(new Color(30, 20, 10));
-                g.fillRect(cx - 10, by - 4,  20, 4);
-                g.fillRect(cx - 6,  by - 14, 12, 11);
+                g.fillRect(cx - 10, by - 4, 20, 4);
+                g.fillRect(cx - 6, by - 14, 12, 11);
                 g.setColor(new Color(180, 30, 30));
-                g.fillRect(cx - 6,  by - 6,  12, 3);
+                g.fillRect(cx - 6, by - 6, 12, 3);
             }
-            case 2 -> {
+                break;
+            case 2: {
                 int faceX = bx + PlayState.BIRD_W - 10;
-                int midY  = by + PlayState.BIRD_H / 2 - 2;
+                int midY = by + PlayState.BIRD_H / 2 - 2;
                 g.setColor(new Color(20, 20, 20, 200));
                 g.fillOval(faceX - 10, midY - 4, 9, 7);
-                g.fillOval(faceX,      midY - 4, 9, 7);
+                g.fillOval(faceX, midY - 4, 9, 7);
                 g.setColor(new Color(60, 60, 60));
                 g.drawLine(faceX - 1, midY, faceX, midY);
             }
-            case 3 -> {
+                break;
+            case 3: {
                 int tipX = bx - 6;
                 int topY = by + 4, botY = by + PlayState.BIRD_H - 4;
                 int[] xs = { bx, bx, tipX };
@@ -249,10 +417,11 @@ public class ShopState implements GameState {
                 g.setColor(new Color(220, 100, 255));
                 g.drawPolygon(xs, ys, 3);
             }
-            case 4 -> {
+                break;
+            case 4: {
                 int cx = bx + PlayState.BIRD_W / 2;
-                int[] xs = { cx-9, cx-9, cx-3, cx, cx+3, cx+9, cx+9 };
-                int[] ys = { by-2, by-10, by-6, by-12, by-6, by-10, by-2 };
+                int[] xs = { cx - 9, cx - 9, cx - 3, cx, cx + 3, cx + 9, cx + 9 };
+                int[] ys = { by - 2, by - 10, by - 6, by - 12, by - 6, by - 10, by - 2 };
                 g.setColor(new Color(255, 200, 0));
                 g.fillPolygon(xs, ys, 7);
                 g.setColor(new Color(200, 140, 0));

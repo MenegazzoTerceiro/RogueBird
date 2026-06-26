@@ -12,14 +12,14 @@ public class PlayState implements GameState {
     private final Game game;
 
     // ── Sizes (public so MenuState can reference them) ────────────────────
-    public static final int BIRD_W   = 34;
-    public static final int BIRD_H   = 24;
-    public static final int BIRD_X   = 80;
-    public static final int PIPE_W   = 52;
-    public static final int GAP      = 155;
+    public static final int BIRD_W = 34;
+    public static final int BIRD_H = 24;
+    public static final int BIRD_X = 80;
+    public static final int PIPE_W = 52;
+    public static final int GAP = 155;
 
     // ── Pipe cap dimensions ───────────────────────────────────────────────
-    private static final int CAP_H   = 26;
+    private static final int CAP_H = 26;
     private static final int CAP_EXT = 6;
 
     // ── Bird ──────────────────────────────────────────────────────────────
@@ -33,15 +33,15 @@ public class PlayState implements GameState {
     private static final long SHOT_COOLDOWN = 250;
 
     // ── Pipes ─────────────────────────────────────────────────────────────
-    private static final int   PIPE_FREQ = 90;
-    private static final float PIPE_SPD  = 2.8f;
+    private static final int PIPE_FREQ = 90;
+    private static final float PIPE_SPD = 2.8f;
     private final List<int[]> pipes = new ArrayList<>();
     private final Random rng = new Random();
 
     // ── Coins ─────────────────────────────────────────────────────────────
     private int pipesUntilNextCoin;
     private final List<int[]> coins = new ArrayList<>(); // [x, y]
-    private static final int COIN_SIZE   = 30;
+    private static final int COIN_SIZE = 30;
     private static final int COIN_MARGIN = 30;
     private int coinsThisRun;
 
@@ -56,14 +56,13 @@ public class PlayState implements GameState {
     private int nextBossScore;
     private int bossLevel;
 
-    // ── Estado do jogo ────────────────────────────────────────────────────────
-    private int score, coinScore, tickCount, deadTimer;
-    private boolean dead;
-
     // ── Míssil ────────────────────────────────────────────────────────
     private Missile missile;
     private int lastMissileScore = 0;
 
+    // ── Game state ────────────────────────────────────────────────────────
+    private int score, tickCount, deadTimer;
+    private boolean dead;
     public PlayState(Game game) {
         this.game = game;
     }
@@ -72,6 +71,9 @@ public class PlayState implements GameState {
     private BufferedImage imgBackground;
     private BufferedImage imgFloor;
 
+    public PlayState(Game game) {
+        this.game = game;
+    }
 
     private BufferedImage load(String filename) {
         String path = "/recursos/sprites/" + filename;
@@ -98,24 +100,26 @@ public class PlayState implements GameState {
         groundScroll = 0;
 
         imgBackground = load("background.png");
-        imgFloor      = load("chao.png");
+        imgFloor = load("chao.png");
         boss = null;
         bossFight = false;
         bossSpawned = false;
         nextBossScore = 19;
         bossLevel = 1;
-        bird = new Bird();
+        bird = new Bird(game);
         birdBullets = new ArrayList<>();
         lastShotTime = 0;
     }
 
-    @Override public void onExit() {}
+    @Override
+    public void onExit() {
+    }
 
     private boolean flapPressed() {
         return game.keys.isJustPressed(KeyEvent.VK_SPACE)
-            || game.keys.isJustPressed(KeyEvent.VK_UP)
-            || game.keys.isJustPressed(KeyEvent.VK_W)
-            || game.mouse.isJustPressed(MouseHandler.LEFT);
+                || game.keys.isJustPressed(KeyEvent.VK_UP)
+                || game.keys.isJustPressed(KeyEvent.VK_W)
+                || game.mouse.isJustPressed(MouseHandler.LEFT);
     }
 
     @Override
@@ -141,6 +145,7 @@ public class PlayState implements GameState {
         long now = System.currentTimeMillis();
 
         // atirar com o botão direito do mouse
+        if ((game.mouse.isJustPressed(MouseHandler.RIGHT) || game.keys.isJustPressed(KeyEvent.VK_ENTER))
         if ((game.mouse.isJustPressed(MouseHandler.RIGHT)
                 || game.keys.isJustPressed(KeyEvent.VK_ENTER))
                 && now - lastShotTime >= SHOT_COOLDOWN) {
@@ -169,6 +174,8 @@ public class PlayState implements GameState {
         // ── Spawn pipes + coins ───────────────────────────────────────────
         if (!bossFight && tickCount % PIPE_FREQ == 0) {
             int gapY = 120 + rng.nextInt(game.height - GROUND_H - 120 - GAP);
+            pipes.add(new int[] { game.width + 10, gapY });
+
             pipes.add(new int[]{game.width + 10, gapY});
             pipesUntilNextCoin--;
             if (pipesUntilNextCoin <= 0) {
@@ -182,14 +189,17 @@ public class PlayState implements GameState {
         // ── Scroll pipes ──────────────────────────────────────────────────
         for (int i = pipes.size() - 1; i >= 0; i--) {
             pipes.get(i)[0] -= (int) PIPE_SPD;
-            if (pipes.get(i)[0] + PIPE_W / 2 == BIRD_X) score++;
-            if (pipes.get(i)[0] + PIPE_W < 0) pipes.remove(i);
+            if (pipes.get(i)[0] + PIPE_W / 2 == BIRD_X)
+                score++;
+            if (pipes.get(i)[0] + PIPE_W < 0)
+                pipes.remove(i);
         }
 
         // ── Scroll coins ──────────────────────────────────────────────────
         for (int i = coins.size() - 1; i >= 0; i--) {
             coins.get(i)[0] -= (int) PIPE_SPD;
-            if (coins.get(i)[0] < -20) coins.remove(i);
+            if (coins.get(i)[0] < -20)
+                coins.remove(i);
         }
 
         groundScroll = ((groundScroll + PIPE_SPD) % game.width)-1;
@@ -224,6 +234,7 @@ public class PlayState implements GameState {
 
         // ── Spawn missile ─────────────────────────────────────────────────
         if (score != 0 && score % 10 == 0 && score != lastMissileScore) {
+
             missile = new Missile(birdY, game.width, score);
             lastMissileScore = score;
         }
@@ -257,6 +268,7 @@ public class PlayState implements GameState {
                     bird.takeDamage(boss.getFireballDamage());
                     System.out.println("FIREBALL ACERTOU - DANO: " + boss.getFireballDamage());
                     boss.getFireball().remove(i);
+                    
                 }
             }
         }
@@ -281,7 +293,7 @@ public class PlayState implements GameState {
                     COIN_SIZE, COIN_SIZE);
             if (birdRect.intersects(coinRect)) {
                 coinsThisRun++;
-                game.coins++;
+                game.coins ++;
                 coins.remove(i);
             }
         }
@@ -329,23 +341,23 @@ public class PlayState implements GameState {
     private void die() { dead = true; deadTimer = 0; birdVel = -5; }
 
     private void defineNextBossScore() {
-        nextBossScore = score + 16 + rng.nextInt(7); // próximo boss spawnará entre 17 e 23 pontos após o último (abaixe
-                                                     // o 17 para testes)
-        nextBossScore = score + 17 + rng.nextInt(7);
+        nextBossScore = score + 17 + rng.nextInt(7); // próximo boss spawnará entre 17 e 23 pontos após o último (abaixe
+                                                    // o 17 para testes)
     }
 
     // ── Pipe drawing ──────────────────────────────────────────────────────
     private void drawPipe(Graphics2D g, int px, int y1, int y2, int capDir) {
         int bodyH = y2 - y1;
-        if (bodyH <= 0) return;
+        if (bodyH <= 0)
+            return;
 
         GradientPaint bodyGrad = new GradientPaint(
-            px, y1, new Color(50, 140, 40), px + PIPE_W, y1, new Color(30, 100, 25));
+                px, y1, new Color(50, 140, 40), px + PIPE_W, y1, new Color(30, 100, 25));
         g.setPaint(bodyGrad);
         g.fillRect(px, y1, PIPE_W, bodyH);
 
         GradientPaint highlight = new GradientPaint(
-            px, y1, new Color(120, 220, 80, 180), px + 10, y1, new Color(80, 170, 50, 0));
+                px, y1, new Color(120, 220, 80, 180), px + 10, y1, new Color(80, 170, 50, 0));
         g.setPaint(highlight);
         g.fillRect(px, y1, PIPE_W / 2, bodyH);
 
@@ -356,12 +368,12 @@ public class PlayState implements GameState {
         int capY = (capDir > 0) ? y2 - CAP_H : y1;
 
         GradientPaint capGrad = new GradientPaint(
-            capX, capY, new Color(60, 160, 50), capX + capW, capY, new Color(35, 110, 28));
+                capX, capY, new Color(60, 160, 50), capX + capW, capY, new Color(35, 110, 28));
         g.setPaint(capGrad);
         g.fillRect(capX, capY, capW, CAP_H);
 
         GradientPaint capHL = new GradientPaint(
-            capX, capY, new Color(140, 230, 90, 200), capX + 14, capY, new Color(80, 180, 55, 0));
+                capX, capY, new Color(140, 230, 90, 200), capX + 14, capY, new Color(80, 180, 55, 0));
         g.setPaint(capHL);
         g.fillRect(capX, capY, capW / 2, CAP_H);
 
@@ -382,10 +394,18 @@ public class PlayState implements GameState {
     // ── Bird skin drawing ─────────────────────────────────────────────────
     private void drawSkin(Graphics2D g2, int bx, int by) {
         switch (game.equippedSkin) {
-            case 1 -> drawHat(g2, bx, by);
-            case 2 -> drawSunglasses(g2, bx, by);
-            case 3 -> drawCape(g2, bx, by);
-            case 4 -> drawCrown(g2, bx, by);
+            case 1:
+                drawHat(g2, bx, by);
+                break;
+            case 2:
+                drawSunglasses(g2, bx, by);
+                break;
+            case 3:
+                drawCape(g2, bx, by);
+                break;
+            case 4:
+                drawCrown(g2, bx, by);
+                break;
         }
     }
 
@@ -400,10 +420,10 @@ public class PlayState implements GameState {
 
     private void drawSunglasses(Graphics2D g2, int bx, int by) {
         int faceX = bx + BIRD_W - 10;
-        int midY  = by + BIRD_H / 2 - 2;
+        int midY = by + BIRD_H / 2 - 2;
         g2.setColor(new Color(20, 20, 20, 200));
         g2.fillOval(faceX - 10, midY - 4, 9, 7);
-        g2.fillOval(faceX,      midY - 4, 9, 7);
+        g2.fillOval(faceX, midY - 4, 9, 7);
         g2.setColor(new Color(60, 60, 60));
         g2.drawLine(faceX - 1, midY, faceX, midY);
     }
@@ -443,13 +463,13 @@ public class PlayState implements GameState {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         for (int[] p : pipes) {
             int px = p[0], gapY = p[1];
-            drawPipe(g, px, 0,          gapY,       1);
+            drawPipe(g, px, 0, gapY, 1);
             drawPipe(g, px, gapY + GAP, groundTop, -1);
         }
 
         // ── Floor ─────────────────────────────────────────────────────────
         int offset = (int) groundScroll;
-        g.drawImage(imgFloor, -offset,            groundTop, game.width, game.height, null);
+        g.drawImage(imgFloor, -offset, groundTop, game.width, game.height, null);
         g.drawImage(imgFloor, game.width - offset, groundTop, game.width, game.height, null);
 
         // ── Boss ──────────────────────────────────────────────────────────
