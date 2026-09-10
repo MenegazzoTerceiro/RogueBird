@@ -315,11 +315,6 @@ public class PlayState implements GameState {
             return;
         }
 
-        // ── Temp boss damage (1/sec) ──────────────────────────────────────
-        if (bossSpawned && boss != null && tickCount % 60 == 0) {
-            boss.takeDamage(1);
-        }
-
         // ── Pipe collision ────────────────────────────────────────────────
         for (int[] p : pipes) {
             int px = p[0], gapY = p[1];
@@ -490,6 +485,7 @@ public class PlayState implements GameState {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.rotate(Math.toRadians(birdAngle), BIRD_X, ry);
         g2.drawImage(imgBird, bx, by, BIRD_W, BIRD_H, null);
+        drawSkin(g2, bx, by);
         g2.dispose();
 
         // ── Coins ─────────────────────────────────────────────────────────
