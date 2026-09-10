@@ -33,6 +33,7 @@ public Bird(Game game) {
 }
 
     public void takeDamage(int damage) {
+        int previousHealth = currentHealth;
 
         if (shieldActive) {
 
@@ -57,6 +58,10 @@ public Bird(Game game) {
 
         if (currentHealth < 0) {
             currentHealth = 0;
+        }
+
+        if (currentHealth < previousHealth) {
+            Sound.play("terraria-male-player-hurt-sound");
         }
     }
 

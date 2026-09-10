@@ -194,6 +194,7 @@ public class Boss {
 
                 if (Math.random() < 0.5) {
                     attackState = AttackState.LASER_AIMING;
+                      Sound.play("laser-warning");
                 } else {
                     attackState = AttackState.FIREBALL_ATTACK;
                 }
@@ -262,19 +263,22 @@ public class Boss {
                     laserHitApplied = false;
                     stateTimer = 0;
                     System.out.println("Laser disparado");
+                    Sound.stop("laser-warning");
+                    Sound.play("laser-fire-lp");
                 }
 
                 break;
 
             case LASER_FIRING:
 
-                if (stateTimer >= 10) { // ~0,16 segundo
+                if (stateTimer >= 30) { // ~0,16 segundo
 
                     attackState = AttackState.IDLE;
 
                     attackCooldown = 100;
                     stateTimer = 0;
 
+                    Sound.stop("laser-fire-lp");
                     System.out.println("Fim do laser");
                 }
 
@@ -321,6 +325,7 @@ public class Boss {
                         vx,
                         vy,
                         20));
+        Sound.play("mario-fireball");
     }
 
     public void updat(int birdX, int birdY) {
@@ -420,6 +425,7 @@ public class Boss {
             g2.setColor(Color.WHITE);
             g2.drawLine(startX, startY, endX, endY);
             g2.dispose();
+
         }
 
         // Bolas de fogo

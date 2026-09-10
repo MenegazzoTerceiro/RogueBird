@@ -63,9 +63,6 @@ public class PlayState implements GameState {
     // ── Game state ────────────────────────────────────────────────────────
     private int score, tickCount, deadTimer;
     private boolean dead;
-    public PlayState(Game game) {
-        this.game = game;
-    }
 
     // ── Sprites ───────────────────────────────────────────────────────────
     private BufferedImage imgBackground;
@@ -107,6 +104,17 @@ public class PlayState implements GameState {
         bird = new Bird(game);
         birdBullets = new ArrayList<>();
         lastShotTime = 0;
+// Load sounds
+        Sound.load("sfx_wing");
+        Sound.load("laser-fire-lp");
+        Sound.load("coin-pickup");
+        Sound.load("missile-warning");
+        Sound.load("missile-launch");
+        Sound.load("mario-fireball");
+        Sound.load("laser-warning");
+        Sound.load("dragon-studio-laser-sfx-570449");
+        Sound.load("sfx_die");
+        Sound.load("terraria-male-player-hurt-sound");
     }
 
     @Override
@@ -130,9 +138,11 @@ public class PlayState implements GameState {
 
         tickCount++;
 
+    
         if (flapPressed()) {
             birdVel = FLAP;
             birdAngle = -25;
+            Sound.play("sfx_wing");
         }
 
         // ativar escudo com shift
@@ -148,6 +158,7 @@ public class PlayState implements GameState {
                 && now - lastShotTime >= SHOT_COOLDOWN) {
             birdBullets.add(new BirdBullet(BIRD_X + BIRD_W / 2, birdY));
             lastShotTime = now; // atualiza o tempo do último tiro
+            Sound.play("dragon-studio-laser-sfx-570449");
         }
 
         for (int i = birdBullets.size() - 1; i >= 0; i--) {
@@ -173,12 +184,12 @@ public class PlayState implements GameState {
             int gapY = 120 + rng.nextInt(game.height - GROUND_H - 120 - GAP);
             pipes.add(new int[] { game.width + 10, gapY });
 
-            pipes.add(new int[]{game.width + 10, gapY});
+            pipes.add(new int[] { game.width + 10, gapY });
             pipesUntilNextCoin--;
             if (pipesUntilNextCoin <= 0) {
                 int coinY = gapY + COIN_MARGIN
                         + rng.nextInt(GAP - 2 * COIN_SIZE - COIN_MARGIN);
-                coins.add(new int[]{game.width + 10 + PIPE_W / 2, coinY});
+                coins.add(new int[] { game.width + 10 + PIPE_W / 2, coinY });
                 pipesUntilNextCoin = 5 + rng.nextInt(6);
             }
         }
@@ -199,7 +210,7 @@ public class PlayState implements GameState {
                 coins.remove(i);
         }
 
-        groundScroll = ((groundScroll + PIPE_SPD) % game.width)-1;
+        groundScroll = ((groundScroll + PIPE_SPD) % game.width) - 1;
 
         // ── Spawn boss ────────────────────────────────────────────────────
         if (bossFight && !bossSpawned && pipes.isEmpty()) {
@@ -236,11 +247,13 @@ public class PlayState implements GameState {
 
             missile = new Missile(birdY, game.width, score);
             lastMissileScore = score;
+            Sound.play("missile-warning");
         }
 
         // ── Update missile ────────────────────────────────────────────────
         if (missile != null) {
             missile.update();
+        
         }
 
         // ── Collision rects ───────────────────────────────────────────────
@@ -267,7 +280,7 @@ public class PlayState implements GameState {
                     bird.takeDamage(boss.getFireballDamage());
                     System.out.println("FIREBALL ACERTOU - DANO: " + boss.getFireballDamage());
                     boss.getFireball().remove(i);
-                    
+
                 }
             }
         }
@@ -292,7 +305,8 @@ public class PlayState implements GameState {
                     COIN_SIZE, COIN_SIZE);
             if (birdRect.intersects(coinRect)) {
                 coinsThisRun++;
-                game.coins ++;
+                game.coins++;
+                Sound.play("coin-pickup");
                 coins.remove(i);
             }
         }
@@ -319,7 +333,7 @@ public class PlayState implements GameState {
         for (int[] p : pipes) {
             int px = p[0], gapY = p[1];
             if (birdRect.intersects(new Rectangle(px, 0, PIPE_W, gapY)) ||
-                birdRect.intersects(new Rectangle(px, gapY + GAP, PIPE_W, game.height))) {
+                    birdRect.intersects(new Rectangle(px, gapY + GAP, PIPE_W, game.height))) {
                 die();
                 return;
             }
@@ -331,12 +345,16 @@ public class PlayState implements GameState {
             return;
         }
     }
-  
-    private void die() { dead = true; deadTimer = 0; birdVel = -5; }
+
+    private void die() {
+        dead = true;
+        deadTimer = 0;
+        birdVel = -5;
+    }
 
     private void defineNextBossScore() {
         nextBossScore = score + 17 + rng.nextInt(7); // próximo boss spawnará entre 17 e 23 pontos após o último (abaixe
-                                                    // o 17 para testes)
+                                                     // o 17 para testes)
     }
 
     // ── Pipe drawing ──────────────────────────────────────────────────────
@@ -475,6 +493,7 @@ public class PlayState implements GameState {
         // ── Missile ───────────────────────────────────────────────────────
         if (missile != null) {
             missile.render(g);
+    
         }
 
         // ── Bird (interpolated) ───────────────────────────────────────────
