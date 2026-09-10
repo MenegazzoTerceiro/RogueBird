@@ -13,6 +13,7 @@ public class ShopState implements GameState {
     // ── Sprites ───────────────────────────────────────────────────────────
     private BufferedImage imgBackground;
     private BufferedImage imgFloor;
+    private BufferedImage imgBird;
 
     // ── Shop items: { skinId, price } ────────────────────────────────────
     private static final int[][] ITEMS = {
@@ -60,6 +61,7 @@ public class ShopState implements GameState {
         feedback = "";
         imgBackground = load("background.png");
         imgFloor = load("chao.png");
+        imgBird = load("passsaro1.png");
     }
 
     @Override
@@ -241,8 +243,7 @@ for (int i = 0; i < TOTAL_ITEMS; i++) {
         int bpx = x + itemW / 2 - PlayState.BIRD_W / 2;
         int bpy = y + 20;
 
-        g.setColor(new Color(255, 200, 0));
-        g.fillRect(bpx, bpy, PlayState.BIRD_W, PlayState.BIRD_H);
+        g.drawImage(imgBird, bpx, bpy, PlayState.BIRD_W, PlayState.BIRD_H, null);
 
         drawSkinPreview(g, skinId, bpx, bpy);
 

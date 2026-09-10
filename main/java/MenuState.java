@@ -15,6 +15,7 @@ public class MenuState implements GameState {
     // ── Sprites ───────────────────────────────────────────────────────────
     private BufferedImage imgBackground; // background.png
     private BufferedImage imgFloor;      // chao.png
+    private BufferedImage imgBird;
 
     public MenuState(Game game)         { this(game, 0); }
     public MenuState(Game game, int hi) { this.game = game; this.highScore = hi; }
@@ -37,6 +38,7 @@ public class MenuState implements GameState {
         tick = 0;
         imgBackground = load("background.png");
         imgFloor      = load("chao.png");
+        imgBird       = load("passsaro1.png");
     }
 
     @Override public void onExit() {}
@@ -73,9 +75,10 @@ public class MenuState implements GameState {
             null);
 
         // ── Bird (preview square) ─────────────────────────────────────────
-        g.setColor(new Color(255, 200, 0));
-        g.fillRect(cx - PlayState.BIRD_W / 2, 240, PlayState.BIRD_W, PlayState.BIRD_H);
-        // TODO: replace with bird sprite (idle frame)
+        g.drawImage(imgBird,
+            cx - PlayState.BIRD_W / 2, 240,
+            PlayState.BIRD_W, PlayState.BIRD_H,
+            null);
 
         // ── Title ─────────────────────────────────────────────────────────
         g.setFont(new Font("Arial", Font.BOLD, 44));
