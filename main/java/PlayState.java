@@ -12,8 +12,8 @@ public class PlayState implements GameState {
     private final Game game;
 
     // ── Sizes (public so MenuState can reference them) ────────────────────
-    public static final int BIRD_W = 34;
-    public static final int BIRD_H = 24;
+    public static final int BIRD_W = 70;
+    public static final int BIRD_H = 49;
     public static final int BIRD_X = 80;
     public static final int PIPE_W = 52;
     public static final int GAP = 155;
@@ -67,10 +67,7 @@ public class PlayState implements GameState {
     // ── Sprites ───────────────────────────────────────────────────────────
     private BufferedImage imgBackground;
     private BufferedImage imgFloor;
-
-    public PlayState(Game game) {
-        this.game = game;
-    }
+    private BufferedImage imgBird;
 
     private BufferedImage load(String filename) {
         String path = "/recursos/sprites/" + filename;
@@ -98,6 +95,7 @@ public class PlayState implements GameState {
 
         imgBackground = load("background.png");
         imgFloor = load("chao.png");
+        imgBird = load("passsaro1.png");
         boss = null;
         bossFight = false;
         bossSpawned = false;
@@ -155,7 +153,8 @@ public class PlayState implements GameState {
         long now = System.currentTimeMillis();
 
         // atirar com o botão direito do mouse
-        if ((game.mouse.isJustPressed(MouseHandler.RIGHT) || game.keys.isJustPressed(KeyEvent.VK_ENTER))
+        if ((game.mouse.isJustPressed(MouseHandler.RIGHT)
+                || game.keys.isJustPressed(KeyEvent.VK_ENTER))
                 && now - lastShotTime >= SHOT_COOLDOWN) {
             birdBullets.add(new BirdBullet(BIRD_X + BIRD_W / 2, birdY));
             lastShotTime = now; // atualiza o tempo do último tiro
@@ -228,9 +227,11 @@ public class PlayState implements GameState {
             System.out.println("Boss nasceu com "
                     + boss.getCurrentHealth() + "/" + boss.getMaxHealth());
         }
-
+        System.out.println("boss = " + boss);
         // ── Update boss ───────────────────────────────────────────────────
         if (boss != null) {
+             System.out.println("boss exitse");
+
             boss.updat(BIRD_X, (int) birdY);
             if (bossSpawned && boss.hasFinishedDeathAnimation()) {
                 bossLevel++;
@@ -327,8 +328,6 @@ public class PlayState implements GameState {
             die();
             return;
         }
-
-        // ── Temp boss damage (1/sec) ──────────────────────────────────────
 
         // ── Pipe collision ────────────────────────────────────────────────
         for (int[] p : pipes) {
@@ -504,13 +503,7 @@ public class PlayState implements GameState {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.rotate(Math.toRadians(birdAngle), BIRD_X, ry);
-        if (bird.isShieldActive()) {
-            g2.setColor(new Color(173, 216, 230)); // azul bebê
-        } else {
-            g2.setColor(new Color(255, 200, 0)); // amarelo normal
-        }
-
-        g2.fillRect(bx, by, BIRD_W, BIRD_H);
+        g2.drawImage(imgBird, bx, by, BIRD_W, BIRD_H, null);
         drawSkin(g2, bx, by);
         g2.dispose();
 
