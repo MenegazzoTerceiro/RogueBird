@@ -33,6 +33,7 @@ public class Missile {
 
             if(alertTimer <= 0){
                 activeAlert = false;
+                Sound.play("missile-launch");
             }
         }
 
