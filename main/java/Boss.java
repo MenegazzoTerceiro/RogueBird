@@ -1,7 +1,10 @@
 import java.awt.*;
 import java.awt.geom.Line2D;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.imageio.ImageIO;
 
 public class Boss {
 
@@ -42,6 +45,15 @@ public class Boss {
     private int targetBirdX;
     private int targetBirdY;
     private double laserAngle;
+
+    private BufferedImage[] bossFrames;
+    private int currentFrame;
+    private int animationCounter;
+
+    private boolean isHit;
+    private int hitTimer;
+    private BufferedImage hitFrame;
+
 
     public int getX() {
         return this.x;
@@ -140,6 +152,29 @@ public class Boss {
         this.fireballDamage = calculateFireballDamage(level);
         fireballs = new ArrayList<>();
         this.deathSpeed = 0;
+
+        bossFrames = new BufferedImage[6];
+
+        try {
+        for (int i = 0; i < 6; i++) {
+            String path = "/recursos/sprites/boss" + (i + 1) + ".png";
+            java.net.URL url = getClass().getResource(path);
+            
+            if (url == null) {
+                System.out.println("SPRITE NÃO ENCONTRADO: " + path);
+            } else {
+                System.out.println("Sprite carregado: " + url);
+                bossFrames[i] = ImageIO.read(url);
+            }
+        }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try{
+        hitFrame = ImageIO.read(getClass().getResource("/recursos/sprites/boss7.png"));
+        }catch(Exception e){
+            e.printStackTrace();
+        }
 
         System.out.println("BOSS COMPILADO NOVAMENTE");
     }
@@ -289,6 +324,19 @@ public class Boss {
     }
 
     public void updat(int birdX, int birdY) {
+
+        animationCounter++;
+
+        if (animationCounter >= 8) { // troca a cada 8 frames
+            currentFrame++;
+            animationCounter = 0;
+
+            if (currentFrame >= bossFrames.length) {
+                currentFrame = 0;
+            }
+             
+        }
+
         if (!positioned) {
             x -= 2; // Move o boss para a esquerda até atingir a posição alvo
             if (x <= targetX) {
@@ -296,6 +344,12 @@ public class Boss {
                 positioned = true;
             }
             return; // Não atualiza o estado de ataque até que o boss esteja posicionado
+        }
+
+        if (hitTimer > 0) {
+            hitTimer--;
+        } else {
+            isHit = false;
         }
 
         updateAttackState(birdX, birdY);
@@ -337,81 +391,47 @@ public class Boss {
 
 
     public void render(Graphics2D g) {
-
         // Cano
         int pipeX = x - (pipeWidth - width) / 2;
         g.setColor(new Color(80, 180, 60));
+        g.fillRect(pipeX, y + height, pipeWidth, pipeHeight);
 
-        g.fillRect(
-                pipeX,
-                y + height,
-                pipeWidth,
-                pipeHeight);
-
-        // mira do laser
+        // Mira do laser
         if (attackState == AttackState.LASER_AIMING || attackState == AttackState.LASER_LOCKED) {
-
             g.setColor(Color.RED);
-
             int startX = x + width / 2;
             int startY = y + height / 2;
-
-            int endX = (int) (startX + Math.cos(laserAngle) * 1000);
-            int endY = (int) (startY + Math.sin(laserAngle) * 1000);
-
-            g.drawLine(
-                    startX,
-                    startY,
-                    endX,
-                    endY);
+            g.drawLine(startX, startY,
+                    (int) (startX + Math.cos(laserAngle) * 1000),
+                    (int) (startY + Math.sin(laserAngle) * 1000));
         }
 
-        // laser disparado
+        // Laser disparado
         if (attackState == AttackState.LASER_FIRING) {
-
             int startX = x + width / 2;
             int startY = y + height / 2;
-
             int endX = (int) (startX + Math.cos(laserAngle) * 1000);
             int endY = (int) (startY + Math.sin(laserAngle) * 1000);
-
             Graphics2D g2 = (Graphics2D) g.create();
-
             g2.setStroke(new BasicStroke(50));
             g2.setColor(new Color(255, 120, 120));
-
-            g2.drawLine(
-                    startX,
-                    startY,
-                    endX,
-                    endY);
-
+            g2.drawLine(startX, startY, endX, endY);
             g2.setStroke(new BasicStroke(30));
             g2.setColor(Color.WHITE);
-
-            g2.drawLine(
-                    startX,
-                    startY,
-                    endX,
-                    endY);
-
+            g2.drawLine(startX, startY, endX, endY);
             g2.dispose();
         }
 
-        // bolas de fogo
+        // Bolas de fogo
         for (Fireball fireball : fireballs) {
             fireball.render(g);
         }
 
-        // Corpo do boss
-        g.setColor(Color.RED);
-
-        g.fillRect(
-                x,
-                y,
-                width,
-                height);
-
+        // Corpo do boss (normal ou hit)
+        BufferedImage frameToDraw = isHit ? hitFrame : bossFrames[currentFrame];
+        if (frameToDraw != null) {
+            g.drawImage(frameToDraw, x, y, width, height, null);
+        }
     }
 
     public void takeDamage(int damage) {
@@ -424,6 +444,9 @@ public class Boss {
         if (currentHealth < 0) {
             currentHealth = 0;
         }
+
+        isHit = true;      // <-- adicione isso
+        hitTimer = 10;  
 
         if (currentHealth <= 0 && attackState != AttackState.DYING) {
 

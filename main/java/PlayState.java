@@ -214,9 +214,11 @@ public class PlayState implements GameState {
             System.out.println("Boss nasceu com "
                     + boss.getCurrentHealth() + "/" + boss.getMaxHealth());
         }
-
+        System.out.println("boss = " + boss);
         // ── Update boss ───────────────────────────────────────────────────
         if (boss != null) {
+             System.out.println("boss exitse");
+
             boss.updat(BIRD_X, (int) birdY);
             if (bossSpawned && boss.hasFinishedDeathAnimation()) {
                 bossLevel++;
